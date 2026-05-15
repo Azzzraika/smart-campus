@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { useRouter } from 'next/navigation'
+import { supabase } from '@/lib/supabase'
 import Link from 'next/link'
 
 export default function LoginPage() {
@@ -24,9 +25,24 @@ export default function LoginPage() {
     }
   }
 
+  // Функция для отправки письма восстановления
+  const handleResetPassword = async () => {
+    if (!email) {
+      alert('Введите email в поле выше, чтобы получить ссылку!')
+      return
+    }
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/profile`, // Перенаправим пользователя в профиль для ввода нового пароля
+    })
+    if (error) {
+      alert('Ошибка: ' + error.message)
+    } else {
+      alert('Инструкции отправлены! Проверьте вашу электронную почту.')
+    }
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center p-4">
-      {/* Использование утилиты card вместо жесткого bg-white */}
       <form onSubmit={handleSubmit} className="card w-full max-w-sm">
         <h1 className="text-2xl font-bold mb-6 text-center">Вход</h1>
         
@@ -36,7 +52,7 @@ export default function LoginPage() {
           </p>
         )}
         
-        <div className="space-y-4 mb-6">
+        <div className="space-y-4 mb-4">
           <input
             type="email"
             placeholder="Email"
@@ -53,6 +69,17 @@ export default function LoginPage() {
             className="input"
             required
           />
+        </div>
+
+        {/* Кнопка "Забыли пароль" адаптированная под Tailwind v4 */}
+        <div className="text-right mb-6">
+          <button 
+            type="button"
+            onClick={handleResetPassword}
+            className="text-sm text-blue-600 dark:text-blue-400 hover:underline cursor-pointer font-medium"
+          >
+            Забыли пароль?
+          </button>
         </div>
 
         <button type="submit" className="btn-primary w-full py-2.5 font-medium">
