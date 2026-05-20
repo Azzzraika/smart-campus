@@ -13,10 +13,15 @@ type Profile = {
 }
 
 export default function ProfilePage() {
-  const [profile, setProfile] = useState<Profile>({ 
-    full_name: '', specialty: '', group_name: '', bio: '', avatar_url: '' 
+  const [profile, setProfile] = useState<Profile>({
+    full_name: '',
+    specialty: '',
+    group_name: '',
+    bio: '',
+    avatar_url: '',
   })
   const [loading, setLoading] = useState(true)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState('')
 
   useEffect(() => {
@@ -24,83 +29,169 @@ export default function ProfilePage() {
   }, [])
 
   const fetchProfile = async () => {
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { data } = await supabase.from('profiles').select('*').eq('id', user.id).single()
-    if (data) setProfile(data as Profile)
-    setLoading(false)
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single()
+
+      if (data) setProfile(data as Profile)
+    } catch (error) {
+      console.error('Ошибка загрузки профиля:', error)
+    } finally {
+      setLoading(false)
+    }
   }
 
   const updateProfile = async (e: React.FormEvent) => {
     e.preventDefault()
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-    const { error } = await supabase.from('profiles').update(profile).eq('id', user.id)
-    if (!error) {
-      setMessage('Профиль обновлён!')
-      setTimeout(() => setMessage(''), 3000)
+    setIsSubmitting(true)
+
+    try {
+      const {
+        data: { user },
+      } = await supabase.auth.getUser()
+      if (!user) return
+
+      const { error } = await supabase
+        .from('profiles')
+        .update(profile)
+        .eq('id', user.id)
+
+      if (!error) {
+        setMessage('Профиль обновлён!')
+        setTimeout(() => setMessage(''), 3000)
+      } else {
+        console.error('Ошибка обновления:', error)
+      }
+    } catch (error) {
+      console.error('Ошибка:', error)
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
-  if (loading) return (
-    <div className="min-h-screen">
-      <Navbar />
-      <p className="p-6 opacity-70">Загрузка...</p>
-    </div>
-  )
+  if (loading) {
+    return (
+      <div className="min-h-screen">
+        <Navbar />
+        <main className="max-w-2xl mx-auto p-4 md:p-6">
+          <div aria-live="polite" aria-label="Загрузка профиля">
+            <p>Загрузка...</p>
+          </div>
+        </main>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen">
       <Navbar />
-      <div className="max-w-2xl mx-auto p-4 md:p-6">
+      <main className="max-w-2xl mx-auto p-4 md:p-6">
         <h1 className="text-3xl font-bold mb-6">Мой профиль</h1>
-        
+
         {message && (
-          <div className="bg-green-100 dark:bg-green-950/40 text-green-800 dark:text-green-300 p-3 rounded border border-green-200/50 dark:border-green-900/50 mb-4 transition-colors">
+          <div
+            role="status"
+            aria-live="polite"
+            className="success-message"
+          >
             {message}
           </div>
         )}
-        
-        {/* Заменено на кастомный класс card */}
-        <form onSubmit={updateProfile} className="card space-y-4">
+
+        <form
+          onSubmit={updateProfile}
+          className="card space-y-4"
+          aria-busy={isSubmitting}
+          aria-label="Редактирование профиля"
+          noValidate
+        >
+          {/* ФИО */}
           <div>
-            <label className="block text-sm font-medium mb-1 opacity-90">ФИО</label>
+            <label htmlFor="full_name" className="form-label">
+              ФИО
+            </label>
             <input
+              id="full_name"
+              type="text"
               value={profile.full_name || ''}
-              onChange={(e) => setProfile({...profile, full_name: e.target.value})}
+              onChange={(e) =>
+                setProfile({ ...profile, full_name: e.target.value })
+              }
               className="input"
+              aria-required="false"
             />
           </div>
+
+          {/* Специальность */}
           <div>
-            <label className="block text-sm font-medium mb-1 opacity-90">Специальность</label>
+            <label htmlFor="specialty" className="form-label">
+              Специальность
+            </label>
             <input
+              id="specialty"
+              type="text"
               value={profile.specialty || ''}
-              onChange={(e) => setProfile({...profile, specialty: e.target.value})}
+              onChange={(e) =>
+                setProfile({ ...profile, specialty: e.target.value })
+              }
               className="input"
+              aria-required="false"
             />
           </div>
+
+          {/* Группа */}
           <div>
-            <label className="block text-sm font-medium mb-1 opacity-90">Группа</label>
+            <label htmlFor="group_name" className="form-label">
+              Группа
+            </label>
             <input
+              id="group_name"
+              type="text"
               value={profile.group_name || ''}
-              onChange={(e) => setProfile({...profile, group_name: e.target.value})}
+              onChange={(e) =>
+                setProfile({ ...profile, group_name: e.target.value })
+              }
               className="input"
+              aria-required="false"
             />
           </div>
+
+          {/* О себе */}
           <div>
-            <label className="block text-sm font-medium mb-1 opacity-90">О себе</label>
+            <label htmlFor="bio" className="form-label">
+              О себе
+            </label>
             <textarea
+              id="bio"
               value={profile.bio || ''}
-              onChange={(e) => setProfile({...profile, bio: e.target.value})}
+              onChange={(e) =>
+                setProfile({ ...profile, bio: e.target.value })
+              }
               className="input"
               rows={3}
+              aria-required="false"
             />
           </div>
-          <button type="submit" className="btn-primary">
-            Сохранить
+
+          {/* Кнопка сохранения */}
+          <button
+            type="submit"
+            className="btn-primary"
+            disabled={isSubmitting}
+            aria-disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Сохранение...' : 'Сохранить'}
           </button>
         </form>
-      </div>
+      </main>
     </div>
   )
 }
